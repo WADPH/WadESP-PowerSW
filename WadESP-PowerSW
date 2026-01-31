@@ -1,0 +1,99 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+/* ===== CONFIG ===== */
+const char* ssid = "Your Network SSID";
+const char* password = "Network PSK";
+
+const int relayPin = 4;                  // D2
+const unsigned long PULSE_MS = 200;      // Relay pulse duration
+/* ================== */
+
+ESP8266WebServer server(80);
+
+/* ===== RELAY STATE ===== */
+bool relayActive = false;
+unsigned long relayStart = 0;
+/* ====================== */
+
+void startPulse() {
+  if (!relayActive) {
+    digitalWrite(relayPin, HIGH);
+    relayActive = true;
+    relayStart = millis();
+  }
+}
+
+/* ===== HTTP HANDLERS ===== */
+
+void handleOn() {
+  startPulse();
+  server.sendHeader("Connection", "close");
+  server.send(200, "application/json", "{\"status\":\"pulse\"}");
+}
+
+void handleOff() {
+  startPulse();
+  server.sendHeader("Connection", "close");
+  server.send(200, "application/json", "{\"status\":\"pulse\"}");
+}
+
+void handleStatus() {
+  server.sendHeader("Connection", "close");
+  server.send(200, "application/json", "{\"status\":\"idle\"}");
+}
+
+void handleNotFound() {
+  server.sendHeader("Connection", "close");
+  server.send(404, "text/plain", "Not found");
+}
+
+/* ========================= */
+
+void ensureWiFi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 5000) {
+      delay(100);
+      yield();
+    }
+  }
+}
+
+void setup() {
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(false);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(300);
+    yield();
+  }
+
+  server.on("/power/on", HTTP_ANY, handleOn);
+  server.on("/power/off", HTTP_ANY, handleOff);
+  server.on("/status", HTTP_ANY, handleStatus);
+  server.onNotFound(handleNotFound);
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+  ensureWiFi();
+
+  if (relayActive && millis() - relayStart >= PULSE_MS) {
+    digitalWrite(relayPin, LOW);
+    relayActive = false;
+  }
+
+  yield();
+}
