@@ -7,7 +7,7 @@ This project simulates a **physical press of the motherboard PowerSW button** us
 <details>
 <summary>Expand Scheme</summary>
   
-<img width="4284" height="2324" alt="image" src="https://github.com/user-attachments/assets/e256b96a-ae6a-46b1-a340-1bc5a7c20a9a" />
+<img width="951" height="401" alt="image" src="https://github.com/user-attachments/assets/68cf6325-e4d8-4e41-9b12-c9720b3813b6" />
 </details>
 
 
